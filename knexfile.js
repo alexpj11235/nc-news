@@ -1,30 +1,34 @@
-const ENV = process.env.NODE_ENV || 'development';
+const ENV = process.env.NODE_ENV || "development";
 
-const baseConfig = {
-  client: 'pg',
-  migrations: {
-    directory: './db/migrations'
-  },
-  seeds: {
-    directory: './db/seeds'
-  }
-};
-
-const customConfig = {
+const dbConfig = {
   development: {
+    client: "pg",
     connection: {
-      database: 'nc_news'
-      // user,
-      // password
+      database: "nc_news",
+      username: "alexpj",
+      password: "password"
+    },
+    seeds: {
+      directory: "./db/seeds"
+    },
+    migrations: {
+      directory: "./db/migrations"
     }
   },
   test: {
+    client: "pg",
     connection: {
-      database: 'nc_news_test'
-      // user,
-      // password
+      database: "nc_news_test",
+      username: "alexpj",
+      password: "password"
+    },
+    seeds: {
+      directory: "./db/seeds"
+    },
+    migrations: {
+      directory: "./db/migrations"
     }
   }
 };
 
-module.exports = { ...customConfig[ENV], ...baseConfig };
+module.exports = dbConfig[ENV];
