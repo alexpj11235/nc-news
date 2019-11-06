@@ -66,6 +66,34 @@ describe("app", () => {
             });
         });
       });
+
+      describe("/:article_id PATCH", () => {
+        it("status 200 ,changes the votes for a given article base on value provided, returns 1 article", () => {
+          return request(app)
+            .patch("/api/articles/1")
+            .send({ inc_votes: 1 })
+            .expect(200)
+            .then(article => {
+              expect(article.body.article[0].votes).to.deep.equal(101);
+              expect(article.body.article.length).to.equal(1);
+            });
+        });
+      });
+      describe("/:article_id/comment POST", () => {
+        it("status 200, posts a comment to a given article, returns the posted comment", () => {
+          return request(app)
+            .post("/api/articles/1/comments")
+            .send({ username: "butter_bridge", body: "best. article. ever." })
+            .expect(201)
+            .then(comment => {
+              expect(comment.body.comment[0].article_id).to.equal(1);
+              expect(comment.body.comment[0].body).to.equal(
+                "best. article. ever."
+              );
+              expect(comment.body.comment.length).to.equal(1);
+            });
+        });
+      });
     });
   });
 });

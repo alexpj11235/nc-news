@@ -19,3 +19,23 @@ exports.fetchArticleById = articleId => {
         });
     });
 };
+
+exports.patchArticleById = (articleId, newVotes) => {
+  return knex("articles")
+    .where({ article_id: articleId })
+    .increment("votes", newVotes)
+    .returning("*")
+    .then(article => {
+      return article;
+    });
+};
+
+exports.postComToArtMod = (articleId, comment) => {
+  return knex("comments")
+    .insert({
+      body: comment.body,
+      author: comment.username,
+      article_id: articleId
+    })
+    .returning("*");
+};
