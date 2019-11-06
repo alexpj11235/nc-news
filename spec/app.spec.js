@@ -47,5 +47,25 @@ describe("app", () => {
         });
       });
     });
+    describe("/articles", () => {
+      describe("/:article_id GET", () => {
+        it("status 200, responds with an article object with correct article", () => {
+          return request(app)
+            .get("/api/articles/1")
+            .expect(200)
+            .then(article => {
+              expect(article.body.article[0].article_id).to.equal(1);
+            });
+        });
+        it("The article has comment_count, which is the total count of all the comment for this article_id", () => {
+          return request(app)
+            .get("/api/articles/1")
+            .expect(200)
+            .then(article => {
+              expect(article.body.article[0].comment_count).to.equal(13);
+            });
+        });
+      });
+    });
   });
 });
