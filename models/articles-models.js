@@ -39,3 +39,41 @@ exports.postComToArtMod = (articleId, comment) => {
     })
     .returning("*");
 };
+
+exports.getComsByIdMod = (articleId, order, query) => {
+  return knex("comments")
+    .where({ article_id: articleId })
+    .returning("*")
+    .orderBy(query || "created_at", order || "desc")
+    .then(comments => {
+      return comments;
+    });
+};
+
+exports.getArticlesMod = (order, sort_by, authorname, topicstr) => {
+  return knex("articles")
+    .select("articles.*")
+    .where(article => {
+      if (authorname) {
+        article.where("articles.author", "=", authorname);
+      }
+    })
+    .where(article => {
+      if (topicstr) {
+        article.where("articles.topic", "=", topicstr);
+      }
+    })
+
+    .count({ comment_count: "comment_id" })
+    .leftJoin("comments", "articles.article_id", "comments.article_id")
+    .groupBy("articles.article_id")
+    .orderBy(sort_by || "created_at", order || "desc")
+
+    .then(articles => {
+      articles.forEach(article => {
+        delete article.body;
+      });
+
+      return articles;
+    });
+};
