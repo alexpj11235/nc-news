@@ -4,7 +4,11 @@ exports.fetchArticleById = articleId => {
   return knex("articles")
     .where({ article_id: articleId })
     .then(article => {
-      return article;
+      if (article.length === 0) {
+        return Promise.reject({ status: 404, msg: "article not found" });
+      } else {
+        return article;
+      }
     })
     .then(article => {
       return knex("comments")
@@ -27,6 +31,13 @@ exports.patchArticleById = (articleId, newVotes) => {
     .returning("*")
     .then(article => {
       return article;
+    })
+    .then(article => {
+      if (article.length === 0) {
+        return Promise.reject({ status: 404, msg: "article not found" });
+      } else {
+        return article;
+      }
     });
 };
 

@@ -12,6 +12,7 @@ beforeEach(() => connection.seed.run());
 after(() => {
   connection.destroy();
 });
+
 describe("app", () => {
   describe("/:article_id GET", () => {
     describe("/api", () => {
@@ -45,9 +46,17 @@ describe("app", () => {
                 });
               });
           });
+          it("status 404 and message user not found if invalid id given", () => {
+            return request(app)
+              .get("/api/users/99")
+              .expect(404)
+              .then(res => {
+                expect(res.body.msg).to.equal("user not found");
+              });
+          });
         });
       });
-      describe("/articles", () => {
+      describe("/articles/:article_id GET", () => {
         it("status 200, responds with an article object with correct article", () => {
           return request(app)
             .get("/api/articles/1")
@@ -60,8 +69,16 @@ describe("app", () => {
           return request(app)
             .get("/api/articles/1")
             .expect(200)
-            .then(article => {
-              expect(article.body.article[0].comment_count).to.equal(13);
+            .then(res => {
+              expect(res.body.article[0].comment_count).to.equal(13);
+            });
+        });
+        it("status 404 and message article not found when invalid id given", () => {
+          return request(app)
+            .get("/api/articles/99")
+            .expect(404)
+            .then(res => {
+              expect(res.body.msg).to.equal("article not found");
             });
         });
       });
@@ -75,6 +92,15 @@ describe("app", () => {
             .then(article => {
               expect(article.body.article[0].votes).to.deep.equal(101);
               expect(article.body.article.length).to.equal(1);
+            });
+        });
+        it("status 404 and message article not found if invalid id given", () => {
+          return request(app)
+            .patch("/api/articles/99")
+            .send({ inc_votes: 1 })
+            .expect(404)
+            .then(res => {
+              expect(res.body.msg).to.equal("article not found");
             });
         });
       });
