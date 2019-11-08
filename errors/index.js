@@ -13,3 +13,7 @@ exports.handle500 = (err, req, res, next) => {
   console.log(err);
   res.status(500).send({ msg: "server error" });
 };
+
+exports.handle405 = (req, res, next) => {
+  res.status(405).send({ msg: "Method Not Allowed" });
+};

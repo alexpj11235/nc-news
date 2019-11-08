@@ -1,8 +1,9 @@
 exports.formatDates = list => {
-  list.forEach(entry => {
+  let newList = [...list];
+  newList.forEach(entry => {
     entry.created_at = new Date(entry.created_at);
   });
-  return list;
+  return newList;
 };
 
 exports.makeRefObj = list => {

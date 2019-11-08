@@ -42,22 +42,40 @@ exports.patchArticleById = (articleId, newVotes) => {
 };
 
 exports.postComToArtMod = (articleId, comment) => {
-  return knex("comments")
-    .insert({
-      body: comment.body,
-      author: comment.username,
-      article_id: articleId
-    })
-    .returning("*");
+  if (!comment.body || !comment.username) {
+    return Promise.reject({
+      status: 400,
+      msg: "post must have username and body"
+    });
+  } else {
+    return knex("comments")
+      .insert({
+        body: comment.body,
+        author: comment.username,
+        article_id: articleId
+      })
+      .returning("*");
+  }
 };
 
 exports.getComsByIdMod = (articleId, order, query) => {
-  return knex("comments")
-    .where({ article_id: articleId })
+  return knex("articles")
     .returning("*")
-    .orderBy(query || "created_at", order || "desc")
-    .then(comments => {
-      return comments;
+    .then(articles => {
+      return articles.length;
+    })
+    .then(articlelength => {
+      return knex("comments")
+        .where({ article_id: articleId })
+        .returning("*")
+        .orderBy(query || "created_at", order || "desc")
+        .then(comments => {
+          if (comments.length === 0 && articleId > articlelength) {
+            return Promise.reject({ status: 404, msg: "article not found" });
+          } else {
+            return { comments };
+          }
+        });
     });
 };
 
@@ -74,7 +92,6 @@ exports.getArticlesMod = (order, sort_by, authorname, topicstr) => {
         article.where("articles.topic", "=", topicstr);
       }
     })
-
     .count({ comment_count: "comment_id" })
     .leftJoin("comments", "articles.article_id", "comments.article_id")
     .groupBy("articles.article_id")
@@ -84,7 +101,13 @@ exports.getArticlesMod = (order, sort_by, authorname, topicstr) => {
       articles.forEach(article => {
         delete article.body;
       });
-
-      return articles;
+      if (articles.length === 0 && topicstr) {
+        return Promise.reject({ status: 404, msg: "topic not found" });
+      }
+      if (articles.length === 0 && authorname) {
+        return Promise.reject({ status: 404, msg: "author not found" });
+      } else {
+        return articles;
+      }
     });
 };
