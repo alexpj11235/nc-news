@@ -1,3 +1,4 @@
+const { DB_URL } = process.env;
 const ENV = process.env.NODE_ENV || "development";
 
 const dbConfig = {
@@ -22,6 +23,16 @@ const dbConfig = {
       username: "alexpj",
       password: "password"
     },
+    seeds: {
+      directory: "./db/seeds"
+    },
+    migrations: {
+      directory: "./db/migrations"
+    }
+  },
+  production: {
+    client: "pg",
+    connection: `${DB_URL}?ssl=true`,
     seeds: {
       directory: "./db/seeds"
     },

@@ -429,7 +429,6 @@ describe("app", () => {
                     .get("/api/articles/1")
                     .expect(200)
                     .then(res => {
-                      console.log(res.body);
                       expect(res.body.article[0].comment_count).to.deep.equal(
                         "12"
                       );
@@ -437,7 +436,7 @@ describe("app", () => {
                 });
             });
           });
-          describe.only("sad path", () => {
+          describe("sad path", () => {
             it("status 400 and message 'bad request' if invalid comment_id given", () => {
               return request(app)
                 .delete("/api/comments/rubbish")
