@@ -387,7 +387,7 @@ describe("app", () => {
     });
     describe("/comments", () => {
       describe("/:comment_id", () => {
-        describe("GET", () => {
+        describe("PATCH", () => {
           describe("happy path", () => {
             it("status 200 ,changes the votes for a given comment base on id provided, returns the patched commment", () => {
               return request(app)
@@ -400,14 +400,64 @@ describe("app", () => {
                 });
             });
           });
+          describe("sad path", () => {
+            it("status 400 and message, patch must include valid inc_votes when no valid inc_votes given", () => {
+              return request(app)
+                .patch("/api/comments/1")
+                .send({ notvotes: 2 })
+                .expect(400)
+                .then(res => {
+                  expect(res.body.msg).to.equal(
+                    "patch must include valid inc_votes"
+                  );
+                });
+            });
+          });
         });
-        // describe("DELETE", () => {
-        //   describe("happy path", () => {
-        //     it("returns status 204 and no content when successful delete", () => {
-        //       return request(app).delete(/api)
-        //     });
-        //   });
-        // });
+        describe("DELETE", () => {
+          describe("happy path", () => {
+            it("returns status 204 and no content", () => {
+              return request(app)
+                .delete("/api/comments/1")
+                .expect(204);
+            });
+            it("successfully deletes content", () => {
+              return request(app)
+                .delete("/api/comments/2")
+                .then(() => {
+                  return request(app)
+                    .get("/api/articles/1")
+                    .expect(200)
+                    .then(res => {
+                      console.log(res.body);
+                      expect(res.body.article[0].comment_count).to.deep.equal(
+                        "12"
+                      );
+                    });
+                });
+            });
+          });
+          describe.only("sad path", () => {
+            it("status 400 and message 'bad request' if invalid comment_id given", () => {
+              return request(app)
+                .delete("/api/comments/rubbish")
+                .expect(400)
+                .then(res => {
+                  expect(res.body.msg).to.equal("Bad request");
+                });
+            });
+            it("status 404 and message 'No comment found for comment_id: 942'", () => {
+              return request(app)
+                .delete("/api/comments/942")
+                .expect(404)
+                .then(res => {
+                  expect(res.body.msg).to.equal(
+                    "No comment found for comment_id: 942"
+                  );
+                });
+            });
+          });
+        });
       });
     });
   });
