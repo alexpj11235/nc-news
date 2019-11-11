@@ -1,13 +1,21 @@
 const knex = require("../db/connection");
 
 exports.fetchUserByName = userName => {
-  return knex("users")
+  const user_names = knex("users")
+    .returning("username")
+    .select("username")
+    .then(userNames => {
+      return userNames.map(user => {
+        return user.username;
+      });
+    });
+  const userArr = knex("users")
+    .returning("*")
     .where({ username: userName })
     .then(user => {
-      if (user.length === 0) {
-        return Promise.reject({ status: 404, msg: "user not found" });
-      } else {
-        return user;
-      }
+      return user;
     });
+  const fetchUserByNamePromises = [user_names, userArr];
+
+  return Promise.all(fetchUserByNamePromises);
 };

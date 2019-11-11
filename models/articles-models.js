@@ -1,44 +1,56 @@
 const knex = require("../db/connection");
 
 exports.fetchArticleById = articleId => {
-  return knex("articles")
-    .where({ article_id: articleId })
-    .then(article => {
-      if (article.length === 0) {
-        return Promise.reject({ status: 404, msg: "article not found" });
-      } else {
-        return article;
-      }
-    })
-    .then(article => {
-      return knex("comments")
-        .where({ article_id: article[0].article_id })
-        .then(comments => {
-          return [article[0], comments.length];
-        })
-        .then(article => {
-          article[0].comment_count = article[1];
-
-          return [article[0]];
-        });
+  const article_Ids = knex("articles")
+    .returning("article_id")
+    .select("article_id")
+    .then(article_ids => {
+      return article_ids.map(article => {
+        return article.article_id;
+      });
     });
+  const articleArr = knex("articles")
+    .select(
+      "articles.author",
+      "articles.topic",
+      "articles.article_id",
+      "articles.created_at",
+      "articles.title",
+      "articles.votes",
+      "articles.body"
+    )
+    .where({ "articles.article_id": articleId })
+    .count({ comment_count: "comment_id" })
+    .leftJoin("comments", "articles.article_id", "comments.article_id")
+    .groupBy("articles.article_id")
+
+    .then(article => {
+      return article;
+    });
+  const fetchArticleByIdPromises = [article_Ids, articleArr];
+
+  return Promise.all(fetchArticleByIdPromises);
 };
 
 exports.patchArticleById = (articleId, newVotes) => {
-  return knex("articles")
+  const articleArr = knex("articles")
     .where({ article_id: articleId })
     .increment("votes", newVotes)
     .returning("*")
     .then(article => {
       return article;
-    })
-    .then(article => {
-      if (article.length === 0) {
-        return Promise.reject({ status: 404, msg: "article not found" });
-      } else {
-        return article;
-      }
     });
+  const article_Ids = knex("articles")
+    .returning("article_id")
+    .select("article_id")
+    .then(article_ids => {
+      return article_ids.map(article => {
+        return article.article_id;
+      });
+    });
+  const patchArticlesPromises = [article_Ids, articleArr];
+
+  return Promise.all(patchArticlesPromises);
 };
 
 exports.postComToArtMod = (articleId, comment) => {
@@ -54,34 +66,45 @@ exports.postComToArtMod = (articleId, comment) => {
         author: comment.username,
         article_id: articleId
       })
-      .returning("*");
+      .returning("*")
+      .then(comment => {
+        return comment;
+      });
   }
 };
 
 exports.getComsByIdMod = (articleId, order, query) => {
-  return knex("articles")
-    .returning("*")
-    .then(articles => {
-      return articles.length;
-    })
-    .then(articlelength => {
-      return knex("comments")
-        .where({ article_id: articleId })
-        .returning("*")
-        .orderBy(query || "created_at", order || "desc")
-        .then(comments => {
-          if (comments.length === 0 && articleId > articlelength) {
-            return Promise.reject({ status: 404, msg: "article not found" });
-          } else {
-            return { comments };
-          }
-        });
+  const article_Ids = knex("articles")
+    .returning("article_id")
+    .select("article_id")
+    .then(article_ids => {
+      return article_ids.map(article => {
+        return article.article_id;
+      });
     });
+
+  const comments = knex("comments")
+    .where({ article_id: articleId })
+    .returning("*")
+    .orderBy(query || "created_at", order || "desc")
+    .then(comments => {
+      return comments;
+    });
+  const comsPromises = [article_Ids, comments];
+
+  return Promise.all(comsPromises);
 };
 
 exports.getArticlesMod = (order, sort_by, authorname, topicstr) => {
   return knex("articles")
-    .select("articles.*")
+    .select(
+      "articles.author",
+      "articles.topic",
+      "articles.article_id",
+      "articles.created_at",
+      "articles.title",
+      "articles.votes"
+    )
     .where(article => {
       if (authorname) {
         article.where("articles.author", "=", authorname);
@@ -98,9 +121,6 @@ exports.getArticlesMod = (order, sort_by, authorname, topicstr) => {
     .orderBy(sort_by || "created_at", order || "desc")
 
     .then(articles => {
-      articles.forEach(article => {
-        delete article.body;
-      });
       if (articles.length === 0 && topicstr) {
         return Promise.reject({ status: 404, msg: "topic not found" });
       }
