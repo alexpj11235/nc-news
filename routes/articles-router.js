@@ -3,10 +3,14 @@ const articlesRouter = require("express")();
 const {
   getArticleById,
   patchArticles,
-  postComToArt,
-  getComsById,
   getArticles
 } = require("../controllers/articles-controllers");
+
+const {
+  postComToArt,
+  getComsById
+} = require("../controllers/comments-controllers");
+
 const { handle405 } = require("../errors");
 
 articlesRouter

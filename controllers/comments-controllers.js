@@ -1,49 +1,52 @@
 const {
-  patchCommentsByIdMod,
+  patchCommentByIdMod,
   deleteCommentMod,
-  checkComId
+  checkComId,
+  postComToArtMod,
+  getComsByIdMod
 } = require("../models/comments-models");
+const { checkArtId } = require("../models/articles-models");
 
-exports.patchCommentsById = (req, res, next) => {
+exports.postComToArt = (req, res, next) => {
+  let articleId = req.params.article_id;
+  let comment = req.body;
+
+  postComToArtMod(articleId, comment)
+    .then(comment => {
+      res.status(201).send({ comment: comment[0] });
+    })
+    .catch(next);
+};
+
+exports.getComsById = (req, res, next) => {
+  let articleId = req.params.article_id;
+  const sort_by = req.query.sort_by;
+  Promise.all([
+    getComsByIdMod(articleId, req.query.order, req.query.sort_by),
+    checkArtId(articleId)
+  ])
+    .then(([comments]) => {
+      res.status(200).send({ comments });
+    })
+    .catch(next);
+};
+
+exports.patchCommentById = (req, res, next) => {
   let commentId = req.params.comment_id;
   let votes = req.body.inc_votes;
-
-  if (!votes) {
-    return Promise.reject({
-      status: 400,
-      msg: "patch must include valid inc_votes"
-    }).catch(next);
-  } else {
-    patchCommentsByIdMod(commentId, votes)
-      .then(comment => {
-        res.status(200).send({ comment });
-      })
-      .catch(next);
-  }
+  Promise.all([patchCommentByIdMod(commentId, votes), checkComId(commentId)])
+    .then(([comment]) => {
+      res.status(200).send({ comment: comment[0] });
+    })
+    .catch(next);
 };
 
 exports.deleteComment = (req, res, next) => {
   let commentId = req.params.comment_id;
-  checkComId(commentId)
-    .then(commentIdArr => {
-      if (!commentIdArr.includes(Number(commentId))) {
-        if (Number(commentId)) {
-          return Promise.reject({
-            status: 404,
-            msg: `No comment found for comment_id: ${commentId}`
-          });
-        }
-      }
-      if (!Number(commentId)) {
-        return Promise.reject({
-          status: 400,
-          msg: `Bad request`
-        });
-      } else {
-        deleteCommentMod(commentId).then(() => {
-          res.status(204).send();
-        });
-      }
+
+  Promise.all([deleteCommentMod(commentId), checkComId(commentId)])
+    .then(() => {
+      res.status(204).send();
     })
 
     .catch(next);

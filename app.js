@@ -12,8 +12,8 @@ const {
 app.use(express.json());
 app.use("/api", apiRouter);
 app.use(handleCustoms);
-// app.use(handle404);
 app.use(handle400);
+app.use(handle404);
 app.use(handle500);
 
 module.exports = app;

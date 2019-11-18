@@ -12,6 +12,7 @@ beforeEach(() => connection.seed.run());
 after(() => {
   connection.destroy();
 });
+
 describe("app", () => {
   describe("/api", () => {
     describe("/topics", () => {
@@ -105,21 +106,21 @@ describe("app", () => {
           });
         });
         describe("sad path", () => {
-          it("status 404 and msg topic not found when given not a topic", () => {
+          it("status 200 and empty array when given not a topic", () => {
             return request(app)
               .get("/api/articles?topic=notatopic")
-              .expect(404)
+              .expect(200)
               .then(res => {
-                expect(res.body.msg).to.equal("topic not found");
+                expect(res.body.articles).to.deep.equal([]);
               });
           });
 
-          it("status 404 and msg author not found when given not an author", () => {
+          it("status 200 and empty array when given not an author", () => {
             return request(app)
               .get("/api/articles?author=notanauthor")
-              .expect(404)
+              .expect(200)
               .then(res => {
-                expect(res.body.msg).to.equal("author not found");
+                expect(res.body.articles).to.deep.equal([]);
               });
           });
           it("status 400 and msg 'Bad request' when given invalid sort_by", () => {
@@ -136,12 +137,12 @@ describe("app", () => {
       describe("/:article_id ", () => {
         describe("GET", () => {
           describe("happy path", () => {
-            it("status 200, responds with an article object with correct article", () => {
+            it("status 200, responds with an object with article key and article object with correct article", () => {
               return request(app)
                 .get("/api/articles/1")
                 .expect(200)
                 .then(res => {
-                  expect(res.body.article[0].article_id).to.equal(1);
+                  expect(res.body.article.article_id).to.equal(1);
                 });
             });
             it("The article has comment_count, which is the total count of all the comment for this article_id", () => {
@@ -149,12 +150,12 @@ describe("app", () => {
                 .get("/api/articles/1")
                 .expect(200)
                 .then(res => {
-                  expect(res.body.article[0].comment_count).to.equal("13");
+                  expect(res.body.article.comment_count).to.equal("13");
                 });
             });
           });
           describe("sad path", () => {
-            it("status 400 and message article not valid when invalid id given", () => {
+            it("status 400 and message Bad request", () => {
               return request(app)
                 .get("/api/articles/notvalid")
                 .expect(400)
@@ -182,32 +183,27 @@ describe("app", () => {
                 .send({ inc_votes: 1 })
                 .expect(200)
                 .then(res => {
-                  expect(res.body.article[0].votes).to.deep.equal(101);
-                  expect(res.body.article.length).to.equal(1);
+                  expect(res.body.article.votes).to.deep.equal(101);
                 });
             });
           });
           describe("sad path", () => {
-            it("status 404 and message 'No article found for article_id: 99' if valid but non-existent id given", () => {
+            it("status 200 and empty object when given a valid but non-exitent id", () => {
               return request(app)
                 .patch("/api/articles/99")
                 .send({ inc_votes: 1 })
-                .expect(404)
+                .expect(200)
                 .then(res => {
-                  expect(res.body.msg).to.equal(
-                    "No article found for article_id: 99"
-                  );
+                  expect(res.body).to.deep.equal({});
                 });
             });
-            it("status 400 and message, patch must include valid inc_votes when no valid inc_votes given", () => {
+            it("status 200 and unchanged article when given no votes", () => {
               return request(app)
                 .patch("/api/articles/1")
                 .send({ notvotes: 1 })
-                .expect(400)
+                .expect(200)
                 .then(res => {
-                  expect(res.body.msg).to.equal(
-                    "patch must include valid inc_votes"
-                  );
+                  expect(res.body.article.votes).to.equal(100);
                 });
             });
           });
@@ -223,12 +219,11 @@ describe("app", () => {
                     body: "best. article. ever."
                   })
                   .expect(201)
-                  .then(comment => {
-                    expect(comment.body.comment[0].article_id).to.equal(1);
-                    expect(comment.body.comment[0].body).to.equal(
+                  .then(res => {
+                    expect(res.body.comment.article_id).to.equal(1);
+                    expect(res.body.comment.body).to.equal(
                       "best. article. ever."
                     );
-                    expect(comment.body.comment.length).to.equal(1);
                   });
               });
             });
@@ -326,9 +321,7 @@ describe("app", () => {
                   .get("/api/articles/99/comments")
                   .expect(404)
                   .then(res => {
-                    expect(res.body.msg).to.equal(
-                      "No article found for article_id: 99"
-                    );
+                    expect(res.body.msg).to.equal("article_id not found");
                   });
               });
               it("status 400 and message Bad request if invalid id given", () => {
@@ -395,21 +388,27 @@ describe("app", () => {
                 .send({ inc_votes: 2 })
                 .expect(200)
                 .then(res => {
-                  expect(res.body.comment[0].votes).to.deep.equal(18);
-                  expect(res.body.comment.length).to.equal(1);
+                  expect(res.body.comment.votes).to.deep.equal(18);
                 });
             });
           });
           describe("sad path", () => {
-            it("status 400 and message, patch must include valid inc_votes when no valid inc_votes given", () => {
+            it("status 200 and returns unchanged comment when no valid inc_votes given", () => {
               return request(app)
                 .patch("/api/comments/1")
-                .send({ notvotes: 2 })
-                .expect(400)
+                .send({ notvotes: 5 })
+                .expect(200)
                 .then(res => {
-                  expect(res.body.msg).to.equal(
-                    "patch must include valid inc_votes"
-                  );
+                  expect(res.body.comment.votes).to.deep.equal(17);
+                });
+            });
+            it("status 404 and message path not found when given a valid but non-existent id", () => {
+              return request(app)
+                .patch("/api/comments/999")
+                .send({ inc_votes: 1 })
+                .expect(404)
+                .then(res => {
+                  expect(res.body.msg).to.equal("comment_id not found");
                 });
             });
           });
@@ -418,20 +417,18 @@ describe("app", () => {
           describe("happy path", () => {
             it("returns status 204 and no content", () => {
               return request(app)
-                .delete("/api/comments/1")
+                .delete("/api/comments/3")
                 .expect(204);
             });
             it("successfully deletes content", () => {
               return request(app)
-                .delete("/api/comments/2")
+                .delete("/api/comments/1")
                 .then(() => {
                   return request(app)
-                    .get("/api/articles/1")
+                    .get("/api/articles/9")
                     .expect(200)
                     .then(res => {
-                      expect(res.body.article[0].comment_count).to.deep.equal(
-                        "12"
-                      );
+                      expect(res.body.article.comment_count).to.deep.equal("1");
                     });
                 });
             });
@@ -450,9 +447,7 @@ describe("app", () => {
                 .delete("/api/comments/942")
                 .expect(404)
                 .then(res => {
-                  expect(res.body.msg).to.equal(
-                    "No comment found for comment_id: 942"
-                  );
+                  expect(res.body.msg).to.equal("comment_id not found");
                 });
             });
           });
