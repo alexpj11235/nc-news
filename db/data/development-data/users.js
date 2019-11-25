@@ -1,6 +1,6 @@
 module.exports = [
   {
-    username: 'tickle122',
+    username: 'np',
     name: 'Tom Tickle',
     avatar_url: 'https://www.spiritsurfers.net/monastery/wp-content/uploads/_41500270_mrtickle.jpg',
   },
